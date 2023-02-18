@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 // controllers
 use App\Http\Controllers\AuthController;
+use App\Models\User;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +19,13 @@ use App\Http\Controllers\AuthController;
 */
 
 Route::prefix('auth')->group(function () {
-  Route::middleware('auth:sanctum')->get('/me', [AuthController::class, 'me']);
-  Route::post('/register', [AuthController::class, 'register']);
-  Route::post('/login', [AuthController::class, 'authenticate'])->name('login');
+  Route::post('/register', [AuthController::class, 'register'])
+    ->middleware('auth:sanctum')
+    ->can('create', User::class);
+
+  Route::post('/login', [AuthController::class, 'authenticate'])
+    ->name('login');
+
+  Route::get('/me', [AuthController::class, 'me'])
+    ->middleware('auth:sanctum');
 });

@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder {
     DB::table('access_controls')->insert([
       'id' => Str::uuid(),
       'role' => 'admin',
-      'entity' => 'users',
+      'entity' => 'user',
       'canRead' => true,
       'canWrite' => true,
       'canDelete' => true,
@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder {
     DB::table('access_controls')->insert([
       'id' => Str::uuid(),
       'role' => 'admin',
-      'entity' => 'items',
+      'entity' => 'item',
       'canRead' => true,
       'canWrite' => true,
       'canDelete' => true,
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder {
     DB::table('access_controls')->insert([
       'id' => Str::uuid(),
       'role' => 'user',
-      'entity' => 'items',
+      'entity' => 'item',
       'canRead' => true,
       'canWrite' => true,
       'canDelete' => true,
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder {
     DB::table('access_controls')->insert([
       'id' => Str::uuid(),
       'role' => 'guest',
-      'entity' => 'items',
+      'entity' => 'item',
       'canRead' => true,
       'canWrite' => false,
       'canDelete' => false,
