@@ -19,5 +19,6 @@ use App\Http\Controllers\AuthController;
 
 Route::prefix('auth')->group(function () {
   Route::middleware('auth:sanctum')->get('/me', [AuthController::class, 'me']);
+  Route::post('/register', [AuthController::class, 'register']);
   Route::post('/login', [AuthController::class, 'authenticate'])->name('login');
 });
