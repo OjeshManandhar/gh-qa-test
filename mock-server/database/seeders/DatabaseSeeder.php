@@ -40,7 +40,7 @@ class DatabaseSeeder extends Seeder {
       'entity' => 'item',
       'canRead' => true,
       'canWrite' => true,
-      'canDelete' => true,
+      'canDelete' => false,
     ]);
     DB::table('access_controls')->insert([
       'id' => Str::uuid(),

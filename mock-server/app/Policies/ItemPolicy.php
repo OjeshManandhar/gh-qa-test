@@ -68,11 +68,7 @@ class ItemPolicy {
       return Response::denyWithStatus(403, 'You are not authorized to delete items');
     }
 
-    if ($user->role === 'admin' || $user->id === $item->user_id) {
-      return Response::allow();
-    }
-
-    return Response::denyWithStatus(403, 'You are not authorized to delete this item');
+    return Response::allow();
   }
 
   /**

@@ -25,8 +25,9 @@ The assumptions I made for access control are the following:
 - User
   - Can view all items
   - Can create items
-  - Can update/delete own items
-  - Can't update/delete other users' items
+  - Can update own items
+  - Can't update other users' items
+  - Can't delete items
 - Admin
   - Can view/create/update/delete users
   - Can view/create/update/delete all items
