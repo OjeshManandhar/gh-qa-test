@@ -18,6 +18,7 @@ class ItemResource extends JsonResource {
       'name' => $this->name,
       'description' => $this->description,
       'price' => $this->price,
+      'createdAt' => $this->created_at,
     ];
   }
 }
