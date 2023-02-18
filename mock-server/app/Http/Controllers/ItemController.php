@@ -36,20 +36,11 @@ class ItemController extends Controller {
    * Store a newly created resource in storage.
    */
   public function store() {
-    $validator = Validator::make(request()->all(), [
+    $body = request()->validate([
       'name' => ['required', 'string', 'min:4', 'max:30'],
       'description' => ['required', 'string', 'min:10', 'max:200'],
       'price' => ['required', 'numeric', 'min:0.01', 'max:1000']
     ]);
-
-    if ($validator->fails()) {
-      return response()->json([
-        'message' => 'Invalid input',
-        'errors' => $validator->errors()
-      ], 400);
-    }
-
-    $body = $validator->validated();
     $body['user_id'] = request()->user()->id;
 
     $item = Item::create($body);
@@ -62,20 +53,11 @@ class ItemController extends Controller {
    * Update the specified resource in storage.
    */
   public function update(Item $item) {
-    $validator = Validator::make(request()->all(), [
+    $body = request()->validate([
       'name' => ['string', 'min:4', 'max:30'],
       'description' => ['string', 'min:10', 'max:200'],
       'price' => ['numeric', 'min:0.01', 'max:1000']
     ]);
-
-    if ($validator->fails()) {
-      return response()->json([
-        'message' => 'Invalid input',
-        'errors' => $validator->errors()
-      ], 400);
-    }
-
-    $body = $validator->validated();
 
     $item->update($body);
 

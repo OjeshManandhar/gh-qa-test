@@ -18,20 +18,12 @@ class AuthController extends Controller {
   }
 
   public function register() {
-    $validator = Validator::make(request()->all(), [
+    $body = request()->validate([
       'name' => ['required', 'string', 'min:4', 'max:30'],
       'email' => ['required', 'email', Rule::unique('users', 'email')],
       'password' => ['required', 'min:8']
     ]);
 
-    if ($validator->fails()) {
-      return response()->json([
-        'message' => 'Invalid input',
-        'errors' => $validator->errors()
-      ], 400);
-    }
-
-    $body = $validator->validated();
     $body['password'] = Hash::make($body['password']);
     $body['role'] = 'user';
 
