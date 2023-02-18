@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
+// resources
+use App\Http\Resources\UserResource;
+
 class AuthController extends Controller {
+  public function me() {
+    return new UserResource(request()->user());
+  }
+
   public function authenticate() {
     $validator = Validator::make(request()->all(), [
       'email' => ['required', 'email'],
