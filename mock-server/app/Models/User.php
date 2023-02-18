@@ -6,6 +6,7 @@ namespace App\Models;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -47,5 +48,9 @@ class User extends Authenticatable {
 
   public function role(): BelongsTo {
     return $this->belongsTo(Role::class, 'role', 'name');
+  }
+
+  public function items(): HasMany {
+    return $this->hasMany(Item::class, 'user_id', 'id');
   }
 }
