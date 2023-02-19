@@ -9,23 +9,43 @@ import request from 'supertest';
 // utils
 import { generateRandomSlug } from './../utils/random-slug';
 
+// types
+import type { Item, User } from './types';
+
 const API_URL = process.env.API_URL;
 
 describe('Item api', () => {
-  let userToken: string, adminToken: string;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const user: { token: string; me: User } = { token: '', me: null! };
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const admin: { token: string; me: User } = { token: '', me: null! };
+
+  let itemCreatedByUser: Item, itemCreatedByAdmin: Item;
 
   beforeAll(async () => {
     const adminLogin = await axios.post(`${API_URL}/auth/login`, {
       email: 'admin@test.com',
       password: 'password',
     });
-    adminToken = adminLogin.data.token;
+    admin.token = adminLogin.data.token;
+    const adminMe = await axios.get(`${API_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${admin.token}`,
+      },
+    });
+    admin.me = adminMe.data.data;
 
     const userLogin = await axios.post(`${API_URL}/auth/login`, {
       email: 'test@test.com',
       password: 'password',
     });
-    userToken = userLogin.data.token;
+    user.token = userLogin.data.token;
+    const userMe = await axios.get(`${API_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    });
+    user.me = userMe.data.data;
   });
 
   describe('Create item', () => {
@@ -52,7 +72,7 @@ describe('Item api', () => {
 
           expect(err).to.be.null;
           expect(res.statusCode).to.equal(401);
-          expect(body).to.have.property('message');
+          expect(body).to.have.property('message').that.is.a('string');
           done();
         });
     });
@@ -61,7 +81,7 @@ describe('Item api', () => {
       request(API_URL)
         .post('/items')
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${user.token}`)
         .send(itemToCreate)
         .end((err, res) => {
           const body = res.body;
@@ -69,12 +89,16 @@ describe('Item api', () => {
           expect(err).to.be.null;
           expect(res.statusCode).to.equal(201);
           expect(body).to.have.property('id');
-          expect(body).to.have.property('userId');
+          expect(body).to.have.property('userId').that.equal(user.me.id);
           expect(body).to.have.property('name').that.equal(itemToCreate.name);
           expect(body)
             .to.have.property('description')
             .that.equal(itemToCreate.description);
           expect(body).to.have.property('price').that.equal(itemToCreate.price);
+
+          // save item for later tests
+          itemCreatedByUser = body;
+
           done();
         });
     });
@@ -83,7 +107,7 @@ describe('Item api', () => {
       request(API_URL)
         .post('/items')
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${admin.token}`)
         .send(itemToCreate)
         .end((err, res) => {
           const body = res.body;
@@ -91,12 +115,16 @@ describe('Item api', () => {
           expect(err).to.be.null;
           expect(res.statusCode).to.equal(201);
           expect(body).to.have.property('id');
-          expect(body).to.have.property('userId');
+          expect(body).to.have.property('userId').that.equal(admin.me.id);
           expect(body).to.have.property('name').that.equal(itemToCreate.name);
           expect(body)
             .to.have.property('description')
             .that.equal(itemToCreate.description);
           expect(body).to.have.property('price').that.equal(itemToCreate.price);
+
+          // save item for later tests
+          itemCreatedByAdmin = body;
+
           done();
         });
     });
@@ -105,7 +133,7 @@ describe('Item api', () => {
       request(API_URL)
         .post('/items')
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${admin.token}`)
         .send({
           name: 'n',
           description: 'd',
@@ -132,13 +160,7 @@ describe('Item api', () => {
   });
 
   describe('Fetch items', () => {
-    let firstItem: {
-      id: string;
-      userId: string;
-      name: string;
-      description: string;
-      price: number;
-    };
+    let firstItem: Item;
 
     it('should return items array when not authenticated', done => {
       request(API_URL)
@@ -166,7 +188,7 @@ describe('Item api', () => {
       request(API_URL)
         .get('/items')
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${user.token}`)
         .end((err, res) => {
           const body = res.body;
 
@@ -181,7 +203,7 @@ describe('Item api', () => {
       request(API_URL)
         .get('/items')
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${admin.token}`)
         .end((err, res) => {
           const body = res.body;
 
@@ -198,6 +220,67 @@ describe('Item api', () => {
       expect(firstItem.name).to.be.a('string');
       expect(firstItem.description).to.be.a('string');
       expect(firstItem.price).to.be.a('number');
+    });
+  });
+
+  describe('Fetch single item', () => {
+    it('should return item when not authenticated', done => {
+      request(API_URL)
+        .get(`/items/${itemCreatedByAdmin.id}`)
+        .set('Accept', 'application/json')
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(200);
+          expect(body).to.be.an('object');
+          expect(body.id).to.equal(itemCreatedByAdmin.id);
+          expect(body.userId).to.equal(itemCreatedByAdmin.userId);
+          expect(body.name).to.equal(itemCreatedByAdmin.name);
+          expect(body.description).to.equal(itemCreatedByAdmin.description);
+          expect(body.price).to.equal(itemCreatedByAdmin.price);
+          done();
+        });
+    });
+
+    it('should return item when logged in as user', done => {
+      request(API_URL)
+        .get(`/items/${itemCreatedByAdmin.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${user.token}`)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(200);
+          expect(body).to.be.an('object');
+          expect(body.id).to.equal(itemCreatedByAdmin.id);
+          expect(body.userId).to.equal(itemCreatedByAdmin.userId);
+          expect(body.name).to.equal(itemCreatedByAdmin.name);
+          expect(body.description).to.equal(itemCreatedByAdmin.description);
+          expect(body.price).to.equal(itemCreatedByAdmin.price);
+          done();
+        });
+    });
+
+    it('should return item when logged in as admin', done => {
+      request(API_URL)
+        .get(`/items/${itemCreatedByAdmin.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(200);
+          expect(body).to.be.an('object');
+          expect(body.id).to.equal(itemCreatedByAdmin.id);
+          expect(body.userId).to.equal(itemCreatedByAdmin.userId);
+          expect(body.name).to.equal(itemCreatedByAdmin.name);
+          expect(body.description).to.equal(itemCreatedByAdmin.description);
+          expect(body.price).to.equal(itemCreatedByAdmin.price);
+          done();
+        });
     });
   });
 });
