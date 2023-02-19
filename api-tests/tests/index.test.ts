@@ -1,18 +1,44 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require('dotenv').config({ path: '.env.test' });
 
+// packages
+import axios from 'axios';
+import { expect } from 'chai';
+import request from 'supertest';
+
 const API_URL = process.env.API_URL;
 
-console.log('API_URL', API_URL);
+describe('Item api', () => {
+  let userToken: string, authToken: string;
 
-test('adds 1 + 2 to equal 3', () => {
-  expect(1 + 2).toBe(3);
-});
+  beforeAll(async () => {
+    const adminLogin = await axios.post(`${API_URL}/auth/login`, {
+      email: 'admin@test.com',
+      password: 'password',
+    });
+    authToken = adminLogin.data.token;
 
-test('adds 3 + 2 to equal 3', () => {
-  expect(3 + 2).toBe(4);
-});
+    const userLogin = await axios.post(`${API_URL}/auth/login`, {
+      email: 'test@test.com',
+      password: 'password',
+    });
+    userToken = userLogin.data.token;
+  });
 
-test('adds 3 + 2 to equal 3', () => {
-  expect(3 + 2).toBe(5);
+  describe('Fetch items', () => {
+    it('should return items array when not authenticated', done => {
+      request(API_URL)
+        .get('/items')
+        .set('Accept', 'application/json')
+        .end((err, res) => {
+          const body = res.body;
+          console.log('res:', body);
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(200);
+          expect(body).to.be.an('array');
+          done();
+        });
+    });
+  });
 });
