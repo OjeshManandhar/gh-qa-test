@@ -6,6 +6,9 @@ import axios from 'axios';
 import { expect } from 'chai';
 import request from 'supertest';
 
+// utils
+import { generateRandomSlug } from './../utils/random-slug';
+
 const API_URL = process.env.API_URL;
 
 describe('Item api', () => {
@@ -31,6 +34,13 @@ describe('Item api', () => {
       description: 'test description',
       price: 100,
     };
+
+    // update itemToCreate for each test
+    beforeEach(() => {
+      itemToCreate.name = `test item ${generateRandomSlug(3)}`;
+      itemToCreate.description = `test description ${generateRandomSlug(3)}`;
+      itemToCreate.price = Math.floor(Math.random() * 100);
+    });
 
     it('should throw 401 error when not logged in', done => {
       request(API_URL)
