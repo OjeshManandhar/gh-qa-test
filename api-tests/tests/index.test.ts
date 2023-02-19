@@ -62,7 +62,7 @@ describe('Item api', () => {
       itemToCreate.price = Math.floor(Math.random() * 100);
     });
 
-    it('should throw 401 error when not logged in', done => {
+    it('should return 401 error when not logged in', done => {
       request(API_URL)
         .post('/items')
         .set('Accept', 'application/json')
@@ -281,6 +281,178 @@ describe('Item api', () => {
           expect(body.price).to.equal(itemCreatedByAdmin.price);
           done();
         });
+    });
+  });
+
+  describe('Update item', () => {
+    const newItemValues = {
+      name: 'new name',
+      description: 'new description',
+      price: 100,
+    };
+
+    // update itemToCreate for each test
+    beforeEach(() => {
+      newItemValues.name = `test item ${generateRandomSlug(3)}`;
+      newItemValues.description = `test description ${generateRandomSlug(3)}`;
+      newItemValues.price = Math.floor(Math.random() * 100);
+    });
+
+    it('should return 401 error when not authenticated', done => {
+      request(API_URL)
+        .put(`/items/${itemCreatedByUser.id}`)
+        .set('Accept', 'application/json')
+        .send(newItemValues)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(401);
+          expect(body).to.have.property('message').that.is.a('string');
+          done();
+        });
+    });
+
+    it('should return 403 error when trying to update item created by another user', done => {
+      request(API_URL)
+        .put(`/items/${itemCreatedByAdmin.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${user.token}`)
+        .send(newItemValues)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(403);
+          expect(body).to.have.property('message').that.is.a('string');
+          done();
+        });
+    });
+
+    it('should return updated item when updating own item as user', done => {
+      request(API_URL)
+        .put(`/items/${itemCreatedByUser.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${user.token}`)
+        .send(newItemValues)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(200);
+          expect(body).to.be.an('object');
+          expect(body.id).to.equal(itemCreatedByUser.id);
+          expect(body.userId).to.equal(itemCreatedByUser.userId);
+          expect(body.name).to.equal(newItemValues.name);
+          expect(body.description).to.equal(newItemValues.description);
+          expect(body.price).to.equal(newItemValues.price);
+          done();
+        });
+    });
+
+    it('should return updated item when updating item of other user as admin', done => {
+      request(API_URL)
+        .put(`/items/${itemCreatedByUser.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send(newItemValues)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(200);
+          expect(body).to.be.an('object');
+          expect(body.id).to.equal(itemCreatedByUser.id);
+          expect(body.userId).to.equal(itemCreatedByUser.userId);
+          expect(body.name).to.equal(newItemValues.name);
+          expect(body.description).to.equal(newItemValues.description);
+          expect(body.price).to.equal(newItemValues.price);
+          done();
+        });
+    });
+
+    it('should throw 422 error when invalid input is provided', done => {
+      request(API_URL)
+        .put(`/items/${itemCreatedByUser.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          name: 'n',
+          description: 'd',
+          price: -101,
+        })
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(422);
+          expect(body).to.have.property('message');
+          expect(body).to.have.property('errors');
+          // Because provided name was invalid
+          expect(body.errors).to.have.property('name').that.is.an('array');
+          // Because provided description was invalid
+          expect(body.errors)
+            .to.have.property('description')
+            .that.is.an('array');
+          // Because provided price was invalid
+          expect(body.errors).to.have.property('price').that.is.an('array');
+          done();
+        });
+    });
+  });
+
+  describe('Delete item', () => {
+    it('should return 401 error when not authenticated', done => {
+      request(API_URL)
+        .delete(`/items/${itemCreatedByUser.id}`)
+        .set('Accept', 'application/json')
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(401);
+          expect(body).to.have.property('message').that.is.a('string');
+          done();
+        });
+    });
+
+    it('should return 403 error when trying to delete item as a user', done => {
+      request(API_URL)
+        .delete(`/items/${itemCreatedByUser.id}`)
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ${user.token}`)
+        .end((err, res) => {
+          const body = res.body;
+
+          expect(err).to.be.null;
+          expect(res.statusCode).to.equal(403);
+          expect(body).to.have.property('message').that.is.a('string');
+          done();
+        });
+    });
+
+    it('should delete and return deleting item when deleting as admin', done => {
+      axios.get(`${API_URL}/items`).then(res => {
+        const itemToDelete = res.data[0];
+
+        request(API_URL)
+          .delete(`/items/${itemToDelete.id}`)
+          .set('Accept', 'application/json')
+          .set('Authorization', `Bearer ${admin.token}`)
+          .end((err, res) => {
+            const body = res.body;
+
+            expect(err).to.be.null;
+            expect(res.statusCode).to.equal(200);
+            expect(body).to.be.an('object');
+            expect(body.id).to.equal(itemToDelete.id);
+            expect(body.userId).to.equal(itemToDelete.userId);
+            expect(body.name).to.equal(itemToDelete.name);
+            expect(body.description).to.equal(itemToDelete.description);
+            expect(body.price).to.equal(itemToDelete.price);
+            done();
+          });
+      });
     });
   });
 });
